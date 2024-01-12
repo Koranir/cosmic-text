@@ -5,7 +5,7 @@ use alloc::string::{String, ToString};
 use core::{cmp, iter::once};
 use unicode_segmentation::UnicodeSegmentation;
 
-#[cfg(feature = "swash")]
+#[cfg(any(feature = "swash", feature = "fontdue"))]
 use crate::Color;
 use crate::{
     Action, Affinity, AttrsList, Buffer, BufferLine, Change, ChangeItem, Cursor, Edit, FontSystem,
@@ -939,14 +939,10 @@ impl Edit for Editor {
     }
 
     /// Draw the editor
-    #[cfg(feature = "swash")]
-    fn draw<F>(
-        &self,
-        font_system: &mut FontSystem,
-        cache: &mut crate::SwashCache,
-        color: Color,
-        mut f: F,
-    ) where
+    #[cfg(any(feature = "swash", feature = "fontdue"))]
+    fn draw<B, F>(&self, font_system: &mut FontSystem, cache: &mut B, color: Color, mut f: F)
+    where
+        B: crate::backend::Backend,
         F: FnMut(i32, i32, u32, u32, Color),
     {
         let line_height = self.buffer.metrics().line_height;

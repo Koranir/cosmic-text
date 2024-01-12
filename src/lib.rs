@@ -126,10 +126,29 @@ mod shape;
 use self::shape_plan_cache::*;
 mod shape_plan_cache;
 
+pub(crate) mod backend {
+    use crate::{CacheKey, Color, FontSystem};
+
+    pub trait Backend {
+        fn with_pixels<F: FnMut(i32, i32, Color)>(
+            &mut self,
+            font_system: &mut FontSystem,
+            cache_key: CacheKey,
+            base: Color,
+            f: F,
+        );
+    }
+}
+
 #[cfg(feature = "swash")]
 pub use self::swash::*;
 #[cfg(feature = "swash")]
 mod swash;
+
+#[cfg(feature = "fontdue")]
+pub use self::fontdue::*;
+#[cfg(feature = "fontdue")]
+mod fontdue;
 
 type BuildHasher = core::hash::BuildHasherDefault<rustc_hash::FxHasher>;
 

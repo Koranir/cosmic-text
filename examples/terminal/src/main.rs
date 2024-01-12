@@ -4,7 +4,7 @@
 //! or `cargo run --package terminal -- "my own text"`
 
 use colored::Colorize;
-use cosmic_text::{Attrs, Buffer, Color, FontSystem, Metrics, Shaping, SwashCache};
+use cosmic_text::{Attrs, Buffer, Color, FontSystem, FontdueCache, Metrics, Shaping};
 use std::fmt::Write;
 
 fn main() {
@@ -12,7 +12,7 @@ fn main() {
     let mut font_system = FontSystem::new();
 
     // A SwashCache stores rasterized glyphs, create one per application
-    let mut swash_cache = SwashCache::new();
+    let mut swash_cache = FontdueCache::new();
 
     // Text metrics indicate the font size and line height of a buffer
     const FONT_SIZE: f32 = 14.0;

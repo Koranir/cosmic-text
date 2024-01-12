@@ -3,8 +3,6 @@ use alloc::{string::String, vec::Vec};
 use core::cmp;
 use unicode_segmentation::UnicodeSegmentation;
 
-#[cfg(feature = "swash")]
-use crate::Color;
 use crate::{AttrsList, BorrowedWithFontSystem, Buffer, Cursor, FontSystem};
 
 pub use self::editor::*;
@@ -307,15 +305,11 @@ pub trait Edit {
     fn action(&mut self, font_system: &mut FontSystem, action: Action);
 
     /// Draw the editor
-    #[cfg(feature = "swash")]
-    fn draw<F>(
-        &self,
-        font_system: &mut FontSystem,
-        cache: &mut crate::SwashCache,
-        color: Color,
-        f: F,
-    ) where
-        F: FnMut(i32, i32, u32, u32, Color);
+    #[cfg(any(feature = "swash", feature = "fontdue"))]
+    fn draw<B, F>(&self, font_system: &mut FontSystem, cache: &mut B, color: crate::Color, f: F)
+    where
+        B: crate::backend::Backend,
+        F: FnMut(i32, i32, u32, u32, crate::Color);
 }
 
 impl<'a, T: Edit> BorrowedWithFontSystem<'a, T> {
@@ -338,10 +332,11 @@ impl<'a, T: Edit> BorrowedWithFontSystem<'a, T> {
     }
 
     /// Draw the editor
-    #[cfg(feature = "swash")]
-    pub fn draw<F>(&mut self, cache: &mut crate::SwashCache, color: Color, f: F)
+    #[cfg(any(feature = "swash", feature = "fontdue"))]
+    pub fn draw<B, F>(&mut self, cache: &mut B, color: crate::Color, f: F)
     where
-        F: FnMut(i32, i32, u32, u32, Color),
+        B: crate::backend::Backend,
+        F: FnMut(i32, i32, u32, u32, crate::Color),
     {
         self.inner.draw(self.font_system, cache, color, f);
     }

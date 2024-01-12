@@ -885,6 +885,40 @@ impl Buffer {
             }
         }
     }
+
+    /// Draw the buffer using fontdue
+    #[cfg(feature = "fontdue")]
+    pub fn draw<B, F>(&self, font_system: &mut FontSystem, cache: &mut B, color: Color, mut f: F)
+    where
+        B: crate::backend::Backend,
+        F: FnMut(i32, i32, u32, u32, Color),
+    {
+        for run in self.layout_runs() {
+            for glyph in run.glyphs.iter() {
+                let physical_glyph = glyph.physical((0., 0.), 1.0);
+
+                let glyph_color = match glyph.color_opt {
+                    Some(some) => some,
+                    None => color,
+                };
+
+                cache.with_pixels(
+                    font_system,
+                    physical_glyph.cache_key,
+                    glyph_color,
+                    |x, y, color| {
+                        f(
+                            physical_glyph.x + x,
+                            run.line_y as i32 + physical_glyph.y + y,
+                            1,
+                            1,
+                            color,
+                        );
+                    },
+                );
+            }
+        }
+    }
 }
 
 impl<'a> BorrowedWithFontSystem<'a, Buffer> {
@@ -973,9 +1007,10 @@ impl<'a> BorrowedWithFontSystem<'a, Buffer> {
     }
 
     /// Draw the buffer
-    #[cfg(feature = "swash")]
-    pub fn draw<F>(&mut self, cache: &mut crate::SwashCache, color: Color, f: F)
+    #[cfg(any(feature = "swash", feature = "fontdue"))]
+    pub fn draw<B, F>(&mut self, cache: &mut B, color: Color, f: F)
     where
+        B: crate::backend::Backend,
         F: FnMut(i32, i32, u32, u32, Color),
     {
         self.inner.draw(self.font_system, cache, color, f);

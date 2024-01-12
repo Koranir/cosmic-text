@@ -24,6 +24,8 @@ self_cell!(
 pub struct Font {
     #[cfg(feature = "swash")]
     swash: (u32, swash::CacheKey),
+    #[cfg(feature = "fontdue")]
+    fontdue: fontdue::Font,
     rustybuzz: OwnedFace,
     data: Arc<dyn AsRef<[u8]> + Send + Sync>,
     id: fontdb::ID,
@@ -59,6 +61,11 @@ impl Font {
             key: swash.1,
         }
     }
+
+    #[cfg(feature = "fontdue")]
+    pub fn fontdue(&self) -> &fontdue::Font {
+        &self.fontdue
+    }
 }
 
 impl Font {
@@ -80,6 +87,18 @@ impl Font {
             swash: {
                 let swash = swash::FontRef::from_index((*data).as_ref(), info.index as usize)?;
                 (swash.offset, swash.key)
+            },
+            #[cfg(feature = "fontdue")]
+            fontdue: {
+                fontdue::Font::from_bytes(
+                    data.as_ref().as_ref(),
+                    fontdue::FontSettings {
+                        collection_index: info.index,
+                        scale: 40.0,
+                        load_substitutions: true,
+                    },
+                )
+                .ok()?
             },
             rustybuzz: OwnedFace::try_new(Arc::clone(&data), |data| {
                 RustybuzzFace::from_slice((**data).as_ref(), info.index).ok_or(())

@@ -193,3 +193,15 @@ impl SwashCache {
         }
     }
 }
+
+impl crate::backend::Backend for SwashCache {
+    fn with_pixels<F: FnMut(i32, i32, Color)>(
+        &mut self,
+        font_system: &mut FontSystem,
+        cache_key: CacheKey,
+        base: Color,
+        mut f: F,
+    ) {
+        self.with_pixels(font_system, cache_key, base, f);
+    }
+}

@@ -333,14 +333,10 @@ impl<'a> Edit for SyntaxEditor<'a> {
     }
 
     /// Draw the editor
-    #[cfg(feature = "swash")]
-    fn draw<F>(
-        &self,
-        font_system: &mut FontSystem,
-        cache: &mut crate::SwashCache,
-        _color: Color,
-        mut f: F,
-    ) where
+    #[cfg(any(feature = "swash", feature = "fontdue"))]
+    fn draw<B, F>(&self, font_system: &mut FontSystem, cache: &mut B, _color: Color, mut f: F)
+    where
+        B: crate::backend::Backend,
         F: FnMut(i32, i32, u32, u32, Color),
     {
         let size = self.buffer().size();

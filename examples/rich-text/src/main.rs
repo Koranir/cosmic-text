@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use cosmic_text::{
-    Action, Attrs, Buffer, Color, Edit, Editor, Family, FontSystem, Metrics, Shaping, Style,
-    SwashCache, Weight,
+    Action, Attrs, Buffer, Color, Edit, Editor, Family, FontSystem, FontdueCache, Metrics, Shaping,
+    Style, Weight,
 };
 use orbclient::{EventOption, Renderer, Window, WindowFlag};
 use std::{
@@ -121,7 +121,7 @@ fn main() {
         .buffer_mut()
         .set_rich_text(spans.iter().copied(), attrs, Shaping::Advanced);
 
-    let mut swash_cache = SwashCache::new();
+    let mut cache = FontdueCache::new();
 
     //TODO: make window not async?
     let mut mouse_x = -1;
@@ -137,7 +137,7 @@ fn main() {
 
             window.set(bg_color);
 
-            editor.draw(&mut swash_cache, font_color, |x, y, w, h, color| {
+            editor.draw(&mut cache, font_color, |x, y, w, h, color| {
                 window.rect(x, y, w, h, orbclient::Color { data: color.0 });
             });
 

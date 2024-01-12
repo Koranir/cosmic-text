@@ -5,8 +5,8 @@ use cosmic::{
     iced_runtime::keyboard::KeyCode,
     theme::{Theme, ThemeType},
 };
-use cosmic_text::{Action, Edit, SwashCache};
-use std::{cmp, sync::Mutex, time::Instant};
+use cosmic_text::{Action, Edit, FontdueCache};
+use std::{cmp, ops::DerefMut, sync::Mutex, time::Instant};
 
 use crate::FONT_SYSTEM;
 
@@ -233,7 +233,7 @@ where
         // Draw to pixel buffer
         let mut pixels = vec![0; image_w as usize * image_h as usize * 4];
         editor.draw(
-            &mut state.cache.lock().unwrap(),
+            state.cache.lock().unwrap().deref_mut(),
             text_color,
             |x, y, w, h, color| {
                 //TODO: improve performance
@@ -253,7 +253,7 @@ where
             renderer,
             handle,
             Rectangle::new(
-                layout.position() + [self.padding.left as f32, self.padding.top as f32].into(),
+                layout.position() + [self.padding.left, self.padding.top].into(),
                 Size::new(view_w as f32, view_h as f32),
             ),
         );
@@ -387,7 +387,7 @@ where
 
 pub struct State {
     is_dragging: bool,
-    cache: Mutex<SwashCache>,
+    cache: Mutex<FontdueCache>,
 }
 
 impl State {
@@ -395,7 +395,7 @@ impl State {
     pub fn new() -> State {
         State {
             is_dragging: false,
-            cache: Mutex::new(SwashCache::new()),
+            cache: Mutex::new(FontdueCache::new()),
         }
     }
 }

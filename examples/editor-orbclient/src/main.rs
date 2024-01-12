@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use cosmic_text::{
-    Action, Attrs, Buffer, Edit, Family, FontSystem, Metrics, SwashCache, SyntaxEditor,
+    Action, Attrs, Buffer, Edit, Family, FontSystem, FontdueCache, Metrics, SyntaxEditor,
     SyntaxSystem,
 };
 use orbclient::{EventOption, Renderer, Window, WindowFlag};
@@ -81,7 +81,7 @@ fn main() {
         }
     }
 
-    let mut swash_cache = SwashCache::new();
+    let mut swash_cache = FontdueCache::new();
 
     let mut ctrl_pressed = false;
     let mut mouse_x = -1;

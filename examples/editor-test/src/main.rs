@@ -2,7 +2,7 @@
 
 use cosmic_text::{
     Action, BidiParagraphs, BorrowedWithFontSystem, Buffer, Color, Edit, Editor, FontSystem,
-    Metrics, SwashCache,
+    FontdueCache, Metrics,
 };
 use orbclient::{EventOption, Renderer, Window, WindowFlag};
 use std::{env, fs, process, time::Instant};
@@ -11,7 +11,7 @@ use unicode_segmentation::UnicodeSegmentation;
 fn redraw(
     window: &mut Window,
     editor: &mut BorrowedWithFontSystem<Editor>,
-    swash_cache: &mut SwashCache,
+    swash_cache: &mut FontdueCache,
 ) {
     let bg_color = orbclient::Color::rgb(0x34, 0x34, 0x34);
     let font_color = Color::rgb(0xFF, 0xFF, 0xFF);
@@ -70,10 +70,10 @@ fn main() {
 
     let mut editor = editor.borrow_with(&mut font_system);
 
-    let mut swash_cache = SwashCache::new();
+    let mut swash_cache = cosmic_text::FontdueCache::new();
 
     let text = if let Some(arg) = env::args().nth(1) {
-        fs::read_to_string(&arg).expect("failed to open file")
+        fs::read_to_string(arg).expect("failed to open file")
     } else {
         #[cfg(feature = "mono")]
         let default_text = include_str!("../../../sample/mono.txt");

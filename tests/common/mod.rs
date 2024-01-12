@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use cosmic_text::{
-    fontdb::Database, Attrs, AttrsOwned, Buffer, Color, Family, FontSystem, Metrics, Shaping,
-    SwashCache,
+    fontdb::Database, Attrs, AttrsOwned, Buffer, Color, Family, FontSystem, FontdueCache, Metrics,
+    Shaping,
 };
 use tiny_skia::{Paint, Pixmap, Rect, Transform};
 
@@ -83,7 +83,6 @@ impl DrawTestCfg {
         let mut font_db = Database::new();
         font_db.load_fonts_dir(fonts_path);
         let mut font_system = FontSystem::new_with_locale_and_db("En-US".into(), font_db);
-        let mut swash_cache = SwashCache::new();
         let metrics = Metrics::new(self.font_size, self.line_height);
         let mut buffer = Buffer::new(&mut font_system, metrics);
         let mut buffer = buffer.borrow_with(&mut font_system);
@@ -101,44 +100,58 @@ impl DrawTestCfg {
         let mut pixmap = Pixmap::new(self.canvas_width, self.canvas_height).unwrap();
         pixmap.fill(tiny_skia::Color::WHITE);
 
-        buffer.draw(&mut swash_cache, text_color, |x, y, w, h, color| {
-            let mut paint = Paint {
-                anti_alias: true,
-                ..Paint::default()
-            };
-            paint.set_color_rgba8(color.r(), color.g(), color.b(), color.a());
-            let rect = Rect::from_xywh(
-                (x + margins as i32) as f32,
-                (y + margins as i32) as f32,
-                w as f32,
-                h as f32,
-            )
-            .unwrap();
-            pixmap.fill_rect(rect, &paint, Transform::identity(), None);
-        });
+        let mut test_render = |cache| {
+            buffer.draw(cache, text_color, |x, y, w, h, color| {
+                let mut paint = Paint {
+                    anti_alias: true,
+                    ..Paint::default()
+                };
+                paint.set_color_rgba8(color.r(), color.g(), color.b(), color.a());
+                let rect = Rect::from_xywh(
+                    (x + margins as i32) as f32,
+                    (y + margins as i32) as f32,
+                    w as f32,
+                    h as f32,
+                )
+                .unwrap();
+                pixmap.fill_rect(rect, &paint, Transform::identity(), None);
+            });
 
-        let image_name = format!("{}.png", self.name);
-        let reference_image_path = PathBuf::from(&repo_dir)
-            .join("tests")
-            .join("images")
-            .join(image_name);
+            let image_name = format!("{}.png", self.name);
+            let reference_image_path = PathBuf::from(&repo_dir)
+                .join("tests")
+                .join("images")
+                .join(image_name);
 
-        let generate_images = std::env::var("GENERATE_IMAGES")
-            .map(|v| {
-                let val = v.trim().to_ascii_lowercase();
-                ["t", "true", "1"].iter().any(|&v| v == val)
-            })
-            .unwrap_or_default();
+            let generate_images = std::env::var("GENERATE_IMAGES")
+                .map(|v| {
+                    let val = v.trim().to_ascii_lowercase();
+                    ["t", "true", "1"].iter().any(|&v| v == val)
+                })
+                .unwrap_or_default();
 
-        if generate_images {
-            pixmap.save_png(reference_image_path).unwrap();
-        } else {
-            let reference_image_data = std::fs::read(reference_image_path).unwrap();
-            let image_data = pixmap.encode_png().unwrap();
-            assert_eq!(
-                reference_image_data, image_data,
-                "rendering failed of {self:?}"
-            )
+            if generate_images {
+                pixmap.save_png(reference_image_path).unwrap();
+            } else {
+                let reference_image_data = std::fs::read(reference_image_path).unwrap();
+                let image_data = pixmap.encode_png().unwrap();
+                assert_eq!(
+                    reference_image_data, image_data,
+                    "rendering failed of {self:?}"
+                )
+            }
+        };
+
+        #[cfg(feature = "swash")]
+        {
+            let mut cache = SwashCache::new();
+            test_render(&mut cache);
+        }
+
+        #[cfg(feature = "fontdue")]
+        {
+            let mut cache = FontdueCache::new();
+            test_render(&mut cache);
         }
     }
 }

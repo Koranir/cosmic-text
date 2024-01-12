@@ -26,7 +26,7 @@ pub enum Shaping {
     ///
     /// You should use this strategy when you have complete control of the text
     /// and the font you are displaying in your application.
-    #[cfg(feature = "swash")]
+    #[cfg(any(feature = "swash", feature = "fontdue"))]
     Basic,
     /// Advanced text shaping and font fallback.
     ///
@@ -49,7 +49,7 @@ impl Shaping {
         span_rtl: bool,
     ) {
         match self {
-            #[cfg(feature = "swash")]
+            #[cfg(any(feature = "swash", feature = "fontdue"))]
             Self::Basic => shape_skip(font_system, glyphs, line, attrs_list, start_run, end_run),
             Self::Advanced => shape_run(
                 scratch,
@@ -325,7 +325,7 @@ fn shape_run(
     scratch.scripts = scripts;
 }
 
-#[cfg(feature = "swash")]
+#[cfg(any(feature = "swash", feature = "fontdue"))]
 fn shape_skip(
     font_system: &mut FontSystem,
     glyphs: &mut Vec<ShapeGlyph>,
@@ -342,40 +342,80 @@ fn shape_skip(
 
     let font = font_iter.next().expect("no default font found");
     let font_id = font.id();
+    #[cfg(feature = "swash")]
     let font = font.as_swash();
+    #[cfg(feature = "fontdue")]
+    let font = font.fontdue();
 
-    let charmap = font.charmap();
-    let metrics = font.metrics(&[]);
-    let glyph_metrics = font.glyph_metrics(&[]).scale(1.0);
+    #[cfg(feature = "fontdue")]
+    {
+        let metrics = font
+            .vertical_line_metrics(font.units_per_em())
+            .expect("Font had no metric data");
+        glyphs.extend(
+            line[start_run..end_run]
+                .chars()
+                .enumerate()
+                .map(|(i, codepoint)| {
+                    let glyph_id = font.lookup_glyph_index(codepoint);
+                    let x_advance = font
+                        .metrics_indexed(glyph_id, font.units_per_em())
+                        .advance_width;
+                    let attrs = attrs_list.get_span(i);
 
-    let ascent = metrics.ascent / f32::from(metrics.units_per_em);
-    let descent = metrics.descent / f32::from(metrics.units_per_em);
+                    ShapeGlyph {
+                        start: i,
+                        end: i + 1,
+                        x_advance,
+                        y_advance: 0.0,
+                        x_offset: 0.0,
+                        y_offset: 0.0,
+                        ascent: metrics.ascent,
+                        descent: metrics.descent,
+                        font_id,
+                        glyph_id,
+                        color_opt: attrs.color_opt,
+                        metadata: attrs.metadata,
+                    }
+                }),
+        );
+    }
 
-    glyphs.extend(
-        line[start_run..end_run]
-            .chars()
-            .enumerate()
-            .map(|(i, codepoint)| {
-                let glyph_id = charmap.map(codepoint);
-                let x_advance = glyph_metrics.advance_width(glyph_id);
-                let attrs = attrs_list.get_span(i);
+    #[cfg(feature = "swash")]
+    {
+        let charmap = font.charmap();
+        let metrics = font.metrics(&[]);
+        let glyph_metrics = font.glyph_metrics(&[]).scale(1.0);
 
-                ShapeGlyph {
-                    start: i,
-                    end: i + 1,
-                    x_advance,
-                    y_advance: 0.0,
-                    x_offset: 0.0,
-                    y_offset: 0.0,
-                    ascent,
-                    descent,
-                    font_id,
-                    glyph_id,
-                    color_opt: attrs.color_opt,
-                    metadata: attrs.metadata,
-                }
-            }),
-    );
+        let ascent = metrics.ascent / f32::from(metrics.units_per_em);
+        let descent = metrics.descent / f32::from(metrics.units_per_em);
+
+        glyphs.extend(
+            line[start_run..end_run]
+                .chars()
+                .enumerate()
+                .map(|(i, codepoint)| {
+                    let glyph_id = charmap.map(codepoint);
+                    let x_advance = glyph_metrics.advance_width(glyph_id);
+                    let attrs = attrs_list.get_span(i);
+
+                    ShapeGlyph {
+                        start: i,
+                        end: i + 1,
+                        x_advance,
+                        y_advance: 0.0,
+                        x_offset: 0.0,
+                        y_offset: 0.0,
+                        ascent,
+                        descent,
+                        font_id,
+                        glyph_id,
+                        color_opt: attrs.color_opt,
+                        metadata: attrs.metadata,
+                    }
+                }),
+        );
+    }
 }
 
 /// A shaped glyph
